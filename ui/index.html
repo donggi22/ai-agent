@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>납기대응 Multi-Agent 시스템</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a3557, #2e6da4);
+    padding: 16px 32px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+  header span { font-size: 0.8rem; color: #a8c9e8; }
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 56px); }
+
+  /* ── 왼쪽 입력 패널 ── */
+  .panel-left {
+    background: #161b27;
+    border-right: 1px solid #2a3347;
+    padding: 24px 20px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .section-title { font-size: 0.72rem; font-weight: 700; color: #5a7fa8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+  textarea {
+    width: 100%; background: #1e2535; border: 1px solid #2a3347; border-radius: 8px;
+    color: #e0e0e0; padding: 12px; font-size: 0.88rem; resize: vertical; min-height: 100px;
+    font-family: inherit; line-height: 1.5;
+  }
+  textarea:focus { outline: none; border-color: #2e6da4; }
+
+  .field-row { display: flex; flex-direction: column; gap: 6px; }
+  .field-row label { font-size: 0.78rem; color: #7a8fa8; }
+  input[type=text], input[type=number] {
+    width: 100%; background: #1e2535; border: 1px solid #2a3347; border-radius: 6px;
+    color: #e0e0e0; padding: 8px 10px; font-size: 0.85rem;
+  }
+  input:focus { outline: none; border-color: #2e6da4; }
+
+  .workflow-btns { display: flex; gap: 8px; }
+  .wf-btn {
+    flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #2a3347;
+    background: #1e2535; color: #7a9fc8; font-size: 0.82rem; cursor: pointer;
+    transition: all .2s; font-weight: 600;
+  }
+  .wf-btn:hover { border-color: #2e6da4; color: #fff; }
+  .wf-btn.active { background: #2e6da4; border-color: #2e6da4; color: #fff; }
+
+  .run-btn {
+    width: 100%; padding: 13px; border-radius: 8px; border: none;
+    background: linear-gradient(135deg, #2e6da4, #1a9f6c);
+    color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    transition: opacity .2s; letter-spacing: 0.5px;
+  }
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── 오른쪽 메인 ── */
+  .panel-right {
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .tabs { display: flex; background: #161b27; border-bottom: 1px solid #2a3347; }
+  .tab {
+    padding: 12px 20px; font-size: 0.84rem; color: #5a7fa8; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .tab:hover { color: #a8c9e8; }
+  .tab.active { color: #4fa3e0; border-bottom-color: #4fa3e0; }
+
+  .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+  .tab-content.active { display: block; }
+
+  /* trajectory 카드 */
+  .traj-card {
+    background: #1e2535; border: 1px solid #2a3347; border-radius: 10px;
+    margin-bottom: 12px; overflow: hidden; animation: slideIn .3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .traj-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: #1a2032; cursor: pointer;
+  }
+  .traj-agent { font-weight: 700; font-size: 0.88rem; color: #4fa3e0; }
+  .traj-step { font-size: 0.78rem; color: #7a9fc8; }
+  .traj-time { font-size: 0.75rem; color: #4a5f7a; }
+  .traj-api { font-size: 0.72rem; color: #1a9f6c; font-family: monospace; }
+
+  .traj-body { padding: 12px 14px; display: none; }
+  .traj-card.open .traj-body { display: block; }
+  .traj-card.open .traj-header { border-bottom: 1px solid #2a3347; }
+
+  .kv-row { display: grid; grid-template-columns: 110px 1fr; gap: 6px; margin-bottom: 8px; font-size: 0.82rem; }
+  .kv-key { color: #5a7fa8; font-weight: 600; }
+  .kv-val { color: #c0d0e0; word-break: break-all; }
+  pre { background: #131820; border-radius: 6px; padding: 10px; font-size: 0.78rem; color: #9fbfd8; overflow-x: auto; white-space: pre-wrap; }
+
+  .error-badge { background: #5a1a1a; color: #ff6b6b; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; }
+
+  /* 판정 결과 */
+  .verdict-card {
+    border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    border: 2px solid; text-align: center;
+  }
+  .verdict-가능    { background: #0d2e1a; border-color: #1a9f6c; }
+  .verdict-조건부  { background: #2e240a; border-color: #d4a017; }
+  .verdict-불가    { background: #2e0a0a; border-color: #c0392b; }
+  .verdict-에스컬레이션 { background: #1a0a2e; border-color: #8e44ad; }
+
+  .verdict-label { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
+  .verdict-가능    .verdict-label { color: #1a9f6c; }
+  .verdict-조건부  .verdict-label { color: #d4a017; }
+  .verdict-불가    .verdict-label { color: #c0392b; }
+  .verdict-에스컬레이션 .verdict-label { color: #8e44ad; }
+
+  .verdict-sub { font-size: 0.85rem; color: #7a9fc8; }
+
+  .escalation-banner {
+    background: #1a0a2e; border: 1px solid #8e44ad; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .escalation-banner .icon { font-size: 1.4rem; }
+  .escalation-banner .msg { font-size: 0.88rem; color: #c8a0f0; }
+
+  .scenario-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .scenario-table th { background: #1a3557; color: #a8c9e8; padding: 9px 12px; text-align: left; font-weight: 700; }
+  .scenario-table td { padding: 9px 12px; border-bottom: 1px solid #2a3347; color: #c0d0e0; }
+  .scenario-table tr:nth-child(even) td { background: #1a2032; }
+
+  /* 디버그 */
+  .debug-log {
+    background: #131820; border-radius: 8px; padding: 14px;
+    font-family: monospace; font-size: 0.78rem; color: #7a9fc8;
+    white-space: pre-wrap; word-break: break-all; max-height: 500px; overflow-y: auto;
+  }
+
+  .status-bar {
+    padding: 8px 20px; background: #161b27; border-top: 1px solid #2a3347;
+    font-size: 0.78rem; color: #4a5f7a; display: flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a5f7a; }
+  .dot.running { background: #1a9f6c; animation: pulse .8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+  .empty-state { text-align: center; color: #3a4f6a; padding: 60px 0; font-size: 0.9rem; }
+  .empty-state .big { font-size: 2.5rem; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🏭 납기대응 Multi-Agent 시스템</h1>
+    <span>EXAONE 7.8B · LangGraph · 사출성형 도메인</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- 왼쪽 입력 패널 -->
+  <div class="panel-left">
+
+    <div>
+      <div class="section-title">영업팀 질의</div>
+      <textarea id="query" placeholder="예: PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘. 금형 교체 필요한 상황이야.">PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘.</textarea>
+    </div>
+
+    <div>
+      <div class="section-title">수주 정보</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field-row">
+          <label>수주 ID</label>
+          <input type="text" id="order_id" value="ORD-0001">
+        </div>
+        <div class="field-row">
+          <label>제품 코드</label>
+          <input type="text" id="product_code" value="PA-2041">
+        </div>
+        <div class="field-row">
+          <label>요청 수량</label>
+          <input type="number" id="required_qty" value="3000">
+        </div>
+        <div class="field-row">
+          <label>납기 요청일</label>
+          <input type="text" id="required_date" value="2025-06-30">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">워크플로 (수동 선택 / 미선택 시 AI 판별)</div>
+      <div class="workflow-btns">
+        <button class="wf-btn" data-wf="A" onclick="selectWF(this)">A<br><span style="font-size:.7rem;font-weight:400">표준 납기</span></button>
+        <button class="wf-btn" data-wf="B" onclick="selectWF(this)">B<br><span style="font-size:.7rem;font-weight:400">자재+금형</span></button>
+        <button class="wf-btn" data-wf="C" onclick="selectWF(this)">C<br><span style="font-size:.7rem;font-weight:400">경합+에스컬</span></button>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="runAgent()">▶ 에이전트 실행</button>
+
+    <div>
+      <div class="section-title">Agent 서버</div>
+      <input type="text" id="agentUrl" value="http://211.184.227.234:8000">
+    </div>
+
+  </div>
+
+  <!-- 오른쪽 메인 -->
+  <div class="panel-right">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('trajectory', this)">Trajectory</div>
+      <div class="tab" onclick="switchTab('result', this)">판정 결과</div>
+      <div class="tab" onclick="switchTab('debug', this)">디버그</div>
+    </div>
+
+    <!-- Trajectory 탭 -->
+    <div class="tab-content active" id="tab-trajectory">
+      <div id="trajectoryList">
+        <div class="empty-state"><div class="big">🤖</div>에이전트를 실행하면 trajectory가 여기에 표시됩니다.</div>
+      </div>
+    </div>
+
+    <!-- 판정 결과 탭 -->
+    <div class="tab-content" id="tab-result">
+      <div id="resultArea">
+        <div class="empty-state"><div class="big">📋</div>실행 후 최종 판정이 여기에 표시됩니다.</div>
+      </div>
+    </div>
+
+    <!-- 디버그 탭 -->
+    <div class="tab-content" id="tab-debug">
+      <div class="debug-log" id="debugLog">// 실행 로그가 여기에 표시됩니다...</div>
+    </div>
+
+    <div class="status-bar">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">대기 중</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let selectedWF = null;
+
+function selectWF(btn) {
+  document.querySelectorAll('.wf-btn').forEach(b => b.classList.remove('active'));
+  if (selectedWF === btn.dataset.wf) {
+    selectedWF = null;  // 토글 해제
+  } else {
+    btn.classList.add('active');
+    selectedWF = btn.dataset.wf;
+  }
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function setStatus(running, text) {
+  document.getElementById('statusDot').className = 'dot' + (running ? ' running' : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+function appendDebug(text) {
+  const el = document.getElementById('debugLog');
+  el.textContent += '\n' + text;
+  el.scrollTop = el.scrollHeight;
+}
+
+function addTrajectoryCard(entry) {
+  const list = document.getElementById('trajectoryList');
+
+  // 처음 실행 시 empty-state 제거
+  const empty = list.querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  const hasError = entry.error;
+  const card = document.createElement('div');
+  card.className = 'traj-card open';
+
+  const mesApi = entry.mes_api ? `<div class="traj-api">${entry.mes_api}</div>` : '';
+  const errBadge = hasError ? `<span class="error-badge">ERROR</span>` : '';
+
+  card.innerHTML = `
+    <div class="traj-header" onclick="this.parentElement.classList.toggle('open')">
+      <div>
+        <div class="traj-agent">${entry.agent}</div>
+        <div class="traj-step">${entry.step} ${errBadge}</div>
+        ${mesApi}
+      </div>
+      <div class="traj-time">${entry.elapsed_ms ?? '-'}ms</div>
+    </div>
+    <div class="traj-body">
+      <div class="kv-row"><span class="kv-key">입력</span><span class="kv-val">${JSON.stringify(entry.input ?? {})}</span></div>
+      <div class="kv-row"><span class="kv-key">MES 응답</span><span class="kv-val"></span></div>
+      <pre>${JSON.stringify(entry.mes_response ?? entry.output ?? {}, null, 2)}</pre>
+      ${entry.llm_analysis ? `<div class="kv-row"><span class="kv-key">LLM 분석</span><span class="kv-val">${entry.llm_analysis}</span></div>` : ''}
+      ${entry.effective_qty != null ? `<div class="kv-row"><span class="kv-key">실질 양품수량</span><span class="kv-val">${entry.effective_qty.toLocaleString()}개</span></div>` : ''}
+      ${hasError ? `<div class="kv-row"><span class="kv-key">오류</span><span class="kv-val" style="color:#ff6b6b">${entry.error}</span></div>` : ''}
+    </div>
+  `;
+  list.appendChild(card);
+  list.scrollTop = list.scrollHeight;
+}
+
+function renderResult(data) {
+  const area = document.getElementById('resultArea');
+  const v = data.verdict;
+
+  let escHtml = '';
+  if (data.escalation_flag) {
+    escHtml = `
+      <div class="escalation-banner">
+        <div class="icon">⚠️</div>
+        <div class="msg"><strong>에스컬레이션 필요</strong><br>${data.escalation_reason || '생산관리팀장 승인 필요'}</div>
+      </div>`;
+  }
+
+  const rows = (data.scenario_table || []).map(r =>
+    `<tr><td>${r['항목']}</td><td>${r['값']}</td><td>${r['비고'] || ''}</td></tr>`
+  ).join('');
+
+  area.innerHTML = `
+    ${escHtml}
+    <div class="verdict-card verdict-${v}">
+      <div class="verdict-label">${v}</div>
+      <div class="verdict-sub">워크플로 ${data.workflow_type} · ${data.error_log?.length ?? 0}개 오류</div>
+    </div>
+    <table class="scenario-table">
+      <thead><tr><th>항목</th><th>값</th><th>비고</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+async function runAgent() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  // 초기화
+  document.getElementById('trajectoryList').innerHTML = '';
+  document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="big">⏳</div>분석 중...</div>';
+  document.getElementById('debugLog').textContent = '// 실행 시작\n';
+
+  const baseUrl = document.getElementById('agentUrl').value.replace(/\/$/, '');
+  const params = new URLSearchParams({
+    query:         document.getElementById('query').value,
+    order_id:      document.getElementById('order_id').value,
+    product_code:  document.getElementById('product_code').value,
+    required_qty:  document.getElementById('required_qty').value,
+    required_date: document.getElementById('required_date').value,
+    workflow_type: selectedWF || 'A',
+  });
+
+  setStatus(true, '에이전트 실행 중...');
+
+  const es = new EventSource(`${baseUrl}/stream?${params}`);
+
+  es.addEventListener('trajectory', e => {
+    const entry = JSON.parse(e.data);
+    addTrajectoryCard(entry);
+    appendDebug(`[TRAJECTORY] ${entry.agent} / ${entry.step}`);
+    setStatus(true, `${entry.agent} 실행 중...`);
+    // trajectory 탭 자동 전환
+    switchTab('trajectory', document.querySelector('.tab'));
+  });
+
+  es.addEventListener('result', e => {
+    const data = JSON.parse(e.data);
+    renderResult(data);
+    appendDebug(`[RESULT] 판정: ${data.verdict}`);
+    if (data.error_log?.length) {
+      appendDebug(`[ERROR_LOG]\n${JSON.stringify(data.error_log, null, 2)}`);
+    }
+  });
+
+  es.addEventListener('done', () => {
+    es.close();
+    btn.disabled = false;
+    setStatus(false, '완료');
+    appendDebug('// 실행 완료');
+    // 결과 탭으로 이동
+    const tabs = document.querySelectorAll('.tab');
+    switchTab('result', tabs[1]);
+  });
+
+  es.onerror = err => {
+    appendDebug(`[SSE ERROR] ${JSON.stringify(err)}`);
+    es.close();
+    btn.disabled = false;
+    setStatus(false, '오류 발생 - 디버그 탭 확인');
+  };
+}
+</script>
+</body>
+</html>

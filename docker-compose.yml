@@ -1,0 +1,83 @@
+version: "3.9"
+
+services:
+
+  # ── 1. vLLM 모델 서버 ──────────────────────────────────────
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm_server
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface  # 모델 캐시 공유
+    ports:
+      - "8080:8080"
+    command: >
+      --model LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct
+      --served-model-name exaone
+      --port 8080
+      --dtype float16
+      --max-model-len 4096
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s  # 모델 로딩 시간 확보
+    restart: unless-stopped
+
+  # ── 2. MES Mock 서버 (서버 2) ──────────────────────────────
+  mes_server:
+    build:
+      context: ./server2_mes
+      dockerfile: Dockerfile
+    container_name: mes_server
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── 3. Agent 서비스 (서버 1) ───────────────────────────────
+  agent_server:
+    build:
+      context: ./server1_agent
+      dockerfile: Dockerfile
+    container_name: agent_server
+    ports:
+      - "8000:8000"
+    environment:
+      - VLLM_BASE_URL=http://vllm:8080/v1
+      - MES_BASE_URL=http://mes_server:8001
+      - MODEL_NAME=exaone
+    depends_on:
+      vllm:
+        condition: service_healthy
+      mes_server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── 4. UI 정적 파일 서버 ───────────────────────────────────
+  ui:
+    image: nginx:alpine
+    container_name: ui_server
+    ports:
+      - "5500:80"
+    volumes:
+      - ./ui:/usr/share/nginx/html:ro
+    depends_on:
+      - agent_server
+    restart: unless-stopped

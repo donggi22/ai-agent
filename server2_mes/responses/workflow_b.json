@@ -1,0 +1,27 @@
+{
+  "production_capa": {
+    "status": "partial",
+    "utilization_rate": 0.91,
+    "available_hours": 80,
+    "producible_qty": 2000,
+    "shift": "1교대",
+    "note": "설비 1대 PM 중"
+  },
+  "material_stock": {
+    "status": "shortage",
+    "current_stock": 800,
+    "required_qty": 3000,
+    "shortage_qty": 2200,
+    "lead_time_days": 7,
+    "supplier": "한국화학",
+    "note": "자재 부족 - 조달 리드타임 7일 필요"
+  },
+  "mold_setup": {
+    "status": "ok",
+    "mold_id": "M-2041",
+    "exchange_time_hours": 4.5,
+    "stabilization_shots": 150,
+    "initial_defect_rate": 0.12,
+    "note": "금형 교체 후 안정화 샷 150발 필요"
+  }
+}

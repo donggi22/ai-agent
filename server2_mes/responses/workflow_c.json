@@ -1,0 +1,38 @@
+{
+  "production_capa": {
+    "status": "overloaded",
+    "utilization_rate": 0.98,
+    "available_hours": 20,
+    "producible_qty": 500,
+    "note": "설비 포화 상태"
+  },
+  "material_stock": {
+    "status": "shortage",
+    "current_stock": 200,
+    "required_qty": 5000,
+    "shortage_qty": 4800,
+    "lead_time_days": 14,
+    "note": "심각한 자재 부족"
+  },
+  "quality_condition": {
+    "status": "warning",
+    "defect_rate": 0.032,
+    "standard_defect_rate": 0.015,
+    "pass": false,
+    "note": "불량률 기준 초과 - 품질 검토 필요"
+  },
+  "mold_setup": {
+    "status": "error",
+    "error_code": 422,
+    "error_message": "금형 이동 불가: 대상 설비 점유 중 (수주 경합)",
+    "mold_id": "M-3097"
+  },
+  "order_conflict": {
+    "status": "escalation",
+    "escalation_code": "ESC-001",
+    "competing_orders": ["ORD-2041", "ORD-2089", "ORD-2103"],
+    "conflict_type": "mold_move_deadlock",
+    "recommended_action": "생산관리팀장 승인 필요",
+    "note": "다수 수주 경합으로 자동 판정 불가 - 에스컬레이션 처리"
+  }
+}

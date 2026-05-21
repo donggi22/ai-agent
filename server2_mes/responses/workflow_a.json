@@ -1,0 +1,16 @@
+{
+  "production_capa": {
+    "status": "ok",
+    "utilization_rate": 0.72,
+    "available_hours": 160,
+    "producible_qty": 5000,
+    "shift": "2교대"
+  },
+  "quality_condition": {
+    "status": "ok",
+    "defect_rate": 0.008,
+    "standard_defect_rate": 0.015,
+    "pass": true,
+    "note": "품질 기준 충족"
+  }
+}
