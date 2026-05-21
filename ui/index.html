@@ -152,6 +152,58 @@
 
   .empty-state { text-align: center; color: #3a4f6a; padding: 60px 0; font-size: 0.9rem; }
   .empty-state .big { font-size: 2.5rem; margin-bottom: 12px; }
+
+  /* 에이전트 체인 시각화 */
+  .chain-arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 0; color: #2e6da4; font-size: 0.75rem; gap: 6px;
+  }
+  .chain-arrow::before, .chain-arrow::after {
+    content: ''; flex: 1; height: 1px; background: #2a3347;
+  }
+
+  /* LLM 원문 응답 — 메인 */
+  .llm-response-box {
+    background: #0a1525; border-left: 3px solid #4fa3e0;
+    border-radius: 0 6px 6px 0; padding: 12px 14px; margin: 10px 0;
+    font-size: 0.85rem; color: #c8dff0; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .llm-response-label {
+    font-size: 0.68rem; font-weight: 700; color: #4fa3e0;
+    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  .chain-box {
+    background: #0d1a2e; border: 1px solid #1a4a7a; border-radius: 6px;
+    padding: 8px 12px; margin: 4px 0; font-size: 0.78rem; color: #6a9fc0;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .chain-box.output {
+    border-color: #1a7a5a; color: #5abf97; background: #0a1e16;
+  }
+  .chain-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .chain-label.recv { color: #2e6da4; }
+  .chain-label.send { color: #1a9f6c; }
+  .chain-section { margin: 8px 0; }
+  .chain-toggle {
+    cursor: pointer; font-size: 0.75rem; color: #4a6fa8; user-select: none;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .chain-toggle:hover { color: #6a9fd8; }
+  .chain-collapsible { display: none; }
+  .chain-collapsible.open { display: block; }
+
+  .method-badge {
+    font-size: 0.68rem; padding: 2px 7px; border-radius: 4px;
+    font-weight: 700; letter-spacing: 0.3px;
+  }
+  .method-badge.llm    { background: #0d2240; color: #4fa3e0; }
+  .method-badge.rule   { background: #2a1a0a; color: #d4a017; }
+  .method-badge.manual { background: #1a2a1a; color: #5abf97; }
 </style>
 </head>
 <body>
@@ -190,7 +242,7 @@
         </div>
         <div class="field-row">
           <label>납기 요청일</label>
-          <input type="text" id="required_date" value="2025-06-30">
+          <input type="text" id="required_date" value="2026-05-30">
         </div>
       </div>
     </div>
@@ -279,6 +331,8 @@ function appendDebug(text) {
   el.scrollTop = el.scrollHeight;
 }
 
+let trajCardCount = 0;
+
 function addTrajectoryCard(entry) {
   const list = document.getElementById('trajectoryList');
 
@@ -286,33 +340,122 @@ function addTrajectoryCard(entry) {
   const empty = list.querySelector('.empty-state');
   if (empty) empty.remove();
 
+  // 첫 번째 카드 제외하고 체인 연결 화살표 추가
+  if (trajCardCount > 0) {
+    const arrow = document.createElement('div');
+    arrow.className = 'chain-arrow';
+    arrow.textContent = '▼ 체인 전달';
+    list.appendChild(arrow);
+  }
+  trajCardCount++;
+
   const hasError = entry.error;
   const card = document.createElement('div');
   card.className = 'traj-card open';
+  const uid = 'card_' + trajCardCount;
 
   const mesApi = entry.mes_api ? `<div class="traj-api">${entry.mes_api}</div>` : '';
   const errBadge = hasError ? `<span class="error-badge">ERROR</span>` : '';
 
+  // method 뱃지
+  const method = entry.method || '';
+  const isLLM = method.includes('llm') || method.includes('text');
+  const isRule = method.includes('fallback') || method.includes('rule') || method.includes('escalation');
+  const isManual = method === 'manual';
+  const methodBadge = method ? `<span class="method-badge ${isLLM ? 'llm' : isManual ? 'manual' : 'rule'}">${
+    isLLM ? '● LLM' : isManual ? '● 수동' : '○ 규칙'}</span>` : '';
+
+  // ① LLM 원문 응답 — 가장 중요, 맨 앞에
+  const rawResp = entry.llm_raw_response || '';
+  const llmRawHtml = rawResp ? `
+    <div style="margin-bottom:10px">
+      <div class="llm-response-label">LLM 원문 응답</div>
+      <div class="llm-response-box">${escHtml(rawResp)}</div>
+    </div>` : '';
+
+  // ② 이 에이전트의 체인 출력 (다음 에이전트로 전달)
+  const myOutput = entry.llm_output || '';
+  const outputHtml = myOutput ? `
+    <div class="chain-section">
+      <div class="chain-label send">▶ 다음 에이전트로 전달 (요약)</div>
+      <div class="chain-box output">${escHtml(myOutput)}</div>
+    </div>` : '';
+
+  // ③ 판정 (orchestrator_verdict)
+  const verdictOut = entry.verdict ? `
+    <div style="margin:8px 0;display:flex;gap:12px;align-items:center">
+      <span style="font-size:0.75rem;color:#5a7fa8">판정</span>
+      <span style="font-weight:800;font-size:1.1rem;color:#4fa3e0">${entry.verdict}</span>
+    </div>` : '';
+  const condHtml = entry.conditions?.length ? `
+    <div style="margin:4px 0;font-size:0.8rem;color:#d4a017">조건: ${entry.conditions.join(' / ')}</div>` : '';
+
+  // ④ MES 응답 — 접어두기
+  const mesResp = entry.mes_response ?? entry.output ?? {};
+  const hasMes = Object.keys(mesResp).length > 0;
+  const mesHtml = hasMes ? `
+    <div class="chain-section">
+      <div class="chain-toggle" onclick="toggleChain('${uid}_mes')">
+        <span id="${uid}_mes_icon">▶</span> MES 원본 데이터 보기
+      </div>
+      <div class="chain-collapsible" id="${uid}_mes">
+        <pre style="margin-top:6px">${JSON.stringify(mesResp, null, 2)}</pre>
+      </div>
+    </div>` : '';
+
+  // ⑤ 이전 체인 — 접어두기
+  const prevCtx = entry.received_from_previous || (entry.step === '최종 판정' ? entry.received_context : '') || '';
+  const prevHtml = prevCtx ? `
+    <div class="chain-section">
+      <div class="chain-toggle" onclick="toggleChain('${uid}_prev')">
+        <span id="${uid}_prev_icon">▶</span> 이전 에이전트 체인 입력 보기
+      </div>
+      <div class="chain-collapsible" id="${uid}_prev">
+        <div class="chain-box">${escHtml(prevCtx)}</div>
+      </div>
+    </div>` : '';
+
   card.innerHTML = `
     <div class="traj-header" onclick="this.parentElement.classList.toggle('open')">
       <div>
-        <div class="traj-agent">${entry.agent}</div>
+        <div class="traj-agent">${entry.agent} ${methodBadge}</div>
         <div class="traj-step">${entry.step} ${errBadge}</div>
         ${mesApi}
       </div>
       <div class="traj-time">${entry.elapsed_ms ?? '-'}ms</div>
     </div>
     <div class="traj-body">
-      <div class="kv-row"><span class="kv-key">입력</span><span class="kv-val">${JSON.stringify(entry.input ?? {})}</span></div>
-      <div class="kv-row"><span class="kv-key">MES 응답</span><span class="kv-val"></span></div>
-      <pre>${JSON.stringify(entry.mes_response ?? entry.output ?? {}, null, 2)}</pre>
-      ${entry.llm_analysis ? `<div class="kv-row"><span class="kv-key">LLM 분석</span><span class="kv-val">${entry.llm_analysis}</span></div>` : ''}
-      ${entry.effective_qty != null ? `<div class="kv-row"><span class="kv-key">실질 양품수량</span><span class="kv-val">${entry.effective_qty.toLocaleString()}개</span></div>` : ''}
-      ${hasError ? `<div class="kv-row"><span class="kv-key">오류</span><span class="kv-val" style="color:#ff6b6b">${entry.error}</span></div>` : ''}
+      ${llmRawHtml}
+      ${verdictOut}
+      ${condHtml}
+      ${outputHtml}
+      ${entry.effective_qty != null ? `<div style="margin:6px 0;font-size:0.82rem;color:#5abf97">실질 양품수량: ${entry.effective_qty.toLocaleString()}개</div>` : ''}
+      ${mesHtml}
+      ${prevHtml}
+      ${hasError ? `<div style="color:#ff6b6b;font-size:0.8rem;margin-top:6px">오류: ${escHtml(entry.error)}</div>` : ''}
     </div>
   `;
   list.appendChild(card);
   list.scrollTop = list.scrollHeight;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br>');
+}
+
+function toggleChain(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById(id + '_icon');
+  if (el.classList.toggle('open')) {
+    icon.textContent = '▼';
+  } else {
+    icon.textContent = '▶';
+  }
 }
 
 function renderResult(data) {
@@ -350,6 +493,7 @@ async function runAgent() {
   btn.disabled = true;
 
   // 초기화
+  trajCardCount = 0;
   document.getElementById('trajectoryList').innerHTML = '';
   document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="big">⏳</div>분석 중...</div>';
   document.getElementById('debugLog').textContent = '// 실행 시작\n';
@@ -368,12 +512,21 @@ async function runAgent() {
 
   const es = new EventSource(`${baseUrl}/stream?${params}`);
 
+  // trajectory 도착 = 해당 에이전트 완료 → 다음 에이전트 이름으로 상태 업데이트
+  const NEXT_AGENT = {
+    'Orchestrator':    '생산CAPA',
+    '생산CAPA Agent':  '자재구매',
+    '자재구매 Agent':  '품질조건',
+    '품질조건 Agent':  '금형셋업',
+    '금형셋업 Agent':  '최종 판정',
+  };
+
   es.addEventListener('trajectory', e => {
     const entry = JSON.parse(e.data);
     addTrajectoryCard(entry);
     appendDebug(`[TRAJECTORY] ${entry.agent} / ${entry.step}`);
-    setStatus(true, `${entry.agent} 실행 중...`);
-    // trajectory 탭 자동 전환
+    const next = NEXT_AGENT[entry.agent];
+    setStatus(true, next ? `${next} 에이전트 실행 중...` : '최종 판정 중...');
     switchTab('trajectory', document.querySelector('.tab'));
   });
 

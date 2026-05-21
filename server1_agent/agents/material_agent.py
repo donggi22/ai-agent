@@ -1,7 +1,9 @@
 import time
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from config import VLLM_BASE_URL, MODEL_NAME, OPENAI_API_KEY
 from state import DeliveryState
+from tools.mes_tools import get_material_stock
 from tools.mes_client import call_material_stock
 
 llm = ChatOpenAI(
@@ -9,56 +11,110 @@ llm = ChatOpenAI(
     api_key=OPENAI_API_KEY,
     model=MODEL_NAME,
     temperature=0.1,
-    max_tokens=256,
+    max_tokens=512,
 )
 
-SYSTEM_PROMPT = """당신은 사출성형 공장의 자재구매 및 재고 분석 전문가입니다.
-MES/ERP에서 조회한 자재 재고, 부족 수량, 조달 리드타임을 분석하여
-납기에 미치는 영향을 판단합니다. 수치 기반으로 간결하게 분석하세요."""
+SYSTEM_PROMPT = """당신은 사출성형 공장의 자재구매 분석 에이전트입니다.
+이전 에이전트들(오케스트레이터, 생산CAPA)의 분석을 이어받아 자재 재고 관점에서 납기 판정에 기여합니다.
+
+응답 시 반드시 아래 형식을 따르세요:
+[이전 분석 인용] 오케스트레이터와 생산CAPA의 핵심 결론을 1문장으로 직접 언급
+[자재 분석] MES 재고/부족/리드타임 데이터를 위 맥락에서 해석하여 2문장
+[다음 에이전트 전달] 품질/금형 에이전트가 참고해야 할 자재 결론 1문장"""
 
 
 async def material_agent(state: DeliveryState) -> DeliveryState:
+    """자재구매 Agent: function calling으로 MES 조회 후 분석"""
     start = time.time()
+    error_log = list(state.get("error_log", []))
+
+    prior_context = "\n".join(state.get("agent_summaries", []))
+    chain_prefix = f"=== 이전 에이전트 분석 ===\n{prior_context}\n\n" if prior_context else ""
+
+    llm_with_tools = llm.bind_tools([get_material_stock])
+    messages = [
+        SystemMessage(SYSTEM_PROMPT),
+        HumanMessage(
+            f"{chain_prefix}자재 재고를 조회하고 납기 영향을 분석하세요.\n"
+            f"주문: order_id={state['order_id']}, product_code={state['product_code']}\n"
+            f"요청수량: {state['required_qty']}개, 납기요청일: {state['required_date']}\n"
+            f"워크플로: {state['workflow_type']}"
+        ),
+    ]
+
+    mes_data = {}
+    tool_calls_log = []
+    analysis = ""
+    llm_raw_response = ""
+    function_calling_worked = False
 
     try:
-        mes_result = await call_material_stock(state)
-        data = mes_result.get("data", {})
-        error = None
-    except Exception as e:
-        mes_result = {}
-        data = {}
-        error = str(e)
+        ai_msg = await llm_with_tools.ainvoke(messages)
+        llm_raw_response = ai_msg.content
 
-    messages = [
-        ("system", SYSTEM_PROMPT),
-        ("human", (
-            f"MES 자재 재고 조회 결과를 분석하세요.\n\n"
-            f"요청 수량: {state['required_qty']}개\n"
-            f"납기 요청일: {state['required_date']}\n"
-            f"MES 응답: {data}\n\n"
-            f"자재 조달 가능 여부와 납기 영향을 2문장으로 답하세요."
-        ))
-    ]
-    response = await llm.ainvoke(messages)
+        if ai_msg.tool_calls:
+            function_calling_worked = True
+            messages.append(ai_msg)
+            for tc in ai_msg.tool_calls:
+                tool_result = await get_material_stock.ainvoke(tc["args"])
+                mes_data = tool_result
+                tool_calls_log.append({
+                    "tool": tc["name"],
+                    "args": tc["args"],
+                    "result": tool_result,
+                })
+                messages.append(ToolMessage(
+                    content=str(tool_result),
+                    tool_call_id=tc["id"],
+                ))
+            final_msg = await llm.ainvoke(messages)
+            analysis = final_msg.content.strip()
+            llm_raw_response = final_msg.content
+        else:
+            mes_data = await call_material_stock(state)
+            from langchain_core.messages import HumanMessage as HM
+            analysis_msg = await llm.ainvoke([
+                messages[0],
+                HM(
+                    f"원래 질의: \"{state['query']}\"\n\n"
+                    f"{chain_prefix}"
+                    f"MES 자재재고 조회 결과: {mes_data.get('data', {})}\n"
+                    f"요청수량: {state['required_qty']}개, 납기: {state['required_date']}\n\n"
+                    f"시스템 프롬프트의 형식([이전 분석 인용]/[자재 분석]/[다음 에이전트 전달])에 맞게 응답하세요."
+                )
+            ])
+            analysis = analysis_msg.content.strip()
+            llm_raw_response = analysis_msg.content
+
+    except Exception as e:
+        error_log.append({"agent": "자재구매", "error": str(e)})
+        try:
+            mes_data = await call_material_stock(state)
+        except Exception as e2:
+            error_log.append({"agent": "자재구매", "fallback_error": str(e2)})
+        analysis = f"오류 발생: {e}"
+
+    my_summary = f"[자재구매] {analysis}"
 
     entry = {
         "agent": "자재구매 Agent",
         "step": "자재 재고 조회",
         "mes_api": "/mes/material-stock",
-        "input": {"required_qty": state["required_qty"], "workflow": state["workflow_type"]},
-        "mes_response": data,
-        "llm_analysis": response.content.strip(),
+        "function_calling_worked": function_calling_worked,
+        "tool_calls": tool_calls_log,
+        "mes_response": mes_data.get("data", {}),
+        "received_from_previous": prior_context,
+        "llm_prompt": messages[-1].content if messages else "",
+        "llm_raw_response": llm_raw_response,
+        "llm_output": my_summary,
+        "llm_analysis": analysis,
         "elapsed_ms": int((time.time() - start) * 1000),
-        "error": error,
     }
-
-    error_log = list(state.get("error_log", []))
-    if error:
-        error_log.append({"agent": "자재구매", "error": error})
 
     return {
         **state,
-        "material_result": mes_result,
+        "material_result": mes_data,
+        "agent_summaries": state.get("agent_summaries", []) + [my_summary],
         "trajectory": state.get("trajectory", []) + [entry],
         "error_log": error_log,
     }

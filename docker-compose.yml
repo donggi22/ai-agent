@@ -20,6 +20,8 @@ services:
       --dtype float16
       --max-model-len 4096
       --trust-remote-code
+      --enable-auto-tool-choice
+      --tool-call-parser hermes
     deploy:
       resources:
         reservations:

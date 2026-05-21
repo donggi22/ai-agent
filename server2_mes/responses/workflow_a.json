@@ -4,7 +4,17 @@
     "utilization_rate": 0.72,
     "available_hours": 160,
     "producible_qty": 5000,
-    "shift": "2교대"
+    "shift": "2교대",
+    "note": "설비 정상 가동"
+  },
+  "material_stock": {
+    "status": "ok",
+    "current_stock": 9999,
+    "required_qty": 3000,
+    "shortage_qty": 0,
+    "lead_time_days": 0,
+    "supplier": "자체 보유",
+    "note": "자재 충분 - 즉시 투입 가능"
   },
   "quality_condition": {
     "status": "ok",
@@ -12,5 +22,13 @@
     "standard_defect_rate": 0.015,
     "pass": true,
     "note": "품질 기준 충족"
+  },
+  "mold_setup": {
+    "status": "ok",
+    "mold_id": "M-2041",
+    "exchange_time_hours": 0,
+    "stabilization_shots": 0,
+    "initial_defect_rate": 0.02,
+    "note": "금형 교체 불필요 - 현재 설치 상태 유지"
   }
 }

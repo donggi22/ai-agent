@@ -16,6 +16,13 @@
     "supplier": "한국화학",
     "note": "자재 부족 - 조달 리드타임 7일 필요"
   },
+  "quality_condition": {
+    "status": "ok",
+    "defect_rate": 0.010,
+    "standard_defect_rate": 0.015,
+    "pass": true,
+    "note": "품질 기준 충족 (금형 교체 후 초기 불량 주의)"
+  },
   "mold_setup": {
     "status": "ok",
     "mold_id": "M-2041",
