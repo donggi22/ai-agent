@@ -28,7 +28,7 @@ class QueryRequest(BaseModel):
     order_id:      str  = "ORD-0001"
     product_code:  str  = "P-001"
     required_qty:  int  = 3000
-    required_date: str  = "2025-06-30"
+    required_date: str  = "2026-06-30"
     workflow_type: str  = "A"   # UI에서 수동 지정 가능, 없으면 Orchestrator 판별
 
 
@@ -82,7 +82,7 @@ async def debug_tool_call():
     llm_with_tool = llm.bind_tools([get_production_capa])
     messages = [
         SystemMessage("당신은 사출성형 공장 생산 CAPA 분석 전문가입니다. get_production_capa 도구를 사용하여 MES를 조회하세요."),
-        HumanMessage("order_id=ORD-0001, product_code=PA-2041, required_qty=3000, required_date=2025-06-30, workflow_type=A 조건으로 생산 CAPA를 조회해줘."),
+        HumanMessage("order_id=ORD-0001, product_code=PA-2041, required_qty=3000, required_date=2026-06-30, workflow_type=A 조건으로 생산 CAPA를 조회해줘."),
     ]
     start = time.time()
     try:
@@ -129,10 +129,13 @@ async def run(req: QueryRequest):
         "quality_result":     None,
         "mold_result":        None,
         "agent_summaries":    [],
+        "agent_signals":      {},
+        "debug_trace":        [],
         "verdict":            "",
         "verdict_reason":     None,
         "verdict_conditions": [],
         "scenario_table":     [],
+        "invalid_query":      False,
         "escalation_flag":    False,
         "escalation_reason":  None,
         "error_log":          [],
@@ -143,12 +146,15 @@ async def run(req: QueryRequest):
         "verdict":            final_state["verdict"],
         "verdict_reason":     final_state.get("verdict_reason"),
         "verdict_conditions": final_state.get("verdict_conditions", []),
+        "invalid_query":      final_state.get("invalid_query", False),
         "workflow_type":      final_state["workflow_type"],
         "scenario_table":     final_state["scenario_table"],
         "escalation_flag":    final_state["escalation_flag"],
         "escalation_reason":  final_state.get("escalation_reason"),
         "agent_summaries":    final_state.get("agent_summaries", []),
-        "trajectory":         final_state["trajectory"],
+        "agent_signals":      final_state.get("agent_signals", {}),
+        "trajectory":         final_state.get("trajectory", []),
+        "debug_trace":        final_state.get("debug_trace", []),
         "error_log":          final_state["error_log"],
     }
 
@@ -160,7 +166,7 @@ async def stream(
     order_id:      str = "ORD-0001",
     product_code:  str = "P-001",
     required_qty:  int = 3000,
-    required_date: str = "2025-06-30",
+    required_date: str = "2026-06-30",
     workflow_type: str = "A",
 ):
     initial_state: DeliveryState = {
@@ -175,10 +181,13 @@ async def stream(
         "quality_result":     None,
         "mold_result":        None,
         "agent_summaries":    [],
+        "agent_signals":      {},
+        "debug_trace":        [],
         "verdict":            "",
         "verdict_reason":     None,
         "verdict_conditions": [],
         "scenario_table":     [],
+        "invalid_query":      False,
         "escalation_flag":    False,
         "escalation_reason":  None,
         "error_log":          [],
@@ -187,20 +196,22 @@ async def stream(
 
     async def event_generator():
         prev_traj_len = 0
+        prev_debug_len = 0
         final_state = None
 
         async for chunk in graph.astream(initial_state):
-            # chunk = { node_name: state_dict }
             for node_name, state in chunk.items():
+                # clean schema trajectory
                 trajectory = state.get("trajectory", [])
-                new_entries = trajectory[prev_traj_len:]
+                for entry in trajectory[prev_traj_len:]:
+                    yield {"event": "trajectory", "data": json.dumps(entry, ensure_ascii=False)}
                 prev_traj_len = len(trajectory)
 
-                for entry in new_entries:
-                    yield {
-                        "event": "trajectory",
-                        "data": json.dumps(entry, ensure_ascii=False)
-                    }
+                # 상세 debug_trace
+                debug_trace = state.get("debug_trace", [])
+                for entry in debug_trace[prev_debug_len:]:
+                    yield {"event": "debug_trace", "data": json.dumps(entry, ensure_ascii=False)}
+                prev_debug_len = len(debug_trace)
 
                 final_state = state
 
@@ -212,6 +223,7 @@ async def stream(
                     "verdict":            final_state.get("verdict", ""),
                     "verdict_reason":     final_state.get("verdict_reason"),
                     "verdict_conditions": final_state.get("verdict_conditions", []),
+                    "invalid_query":      final_state.get("invalid_query", False),
                     "workflow_type":      final_state.get("workflow_type", ""),
                     "scenario_table":     final_state.get("scenario_table", []),
                     "escalation_flag":    final_state.get("escalation_flag", False),

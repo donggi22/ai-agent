@@ -10,32 +10,24 @@
 
   header {
     background: linear-gradient(135deg, #1a3557, #2e6da4);
-    padding: 16px 32px;
-    display: flex; align-items: center; gap: 12px;
+    padding: 16px 32px; display: flex; align-items: center; gap: 12px;
   }
   header h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
   header span { font-size: 0.8rem; color: #a8c9e8; }
 
   .layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 56px); }
 
-  /* ── 왼쪽 입력 패널 ── */
   .panel-left {
-    background: #161b27;
-    border-right: 1px solid #2a3347;
-    padding: 24px 20px;
-    overflow-y: auto;
-    display: flex; flex-direction: column; gap: 16px;
+    background: #161b27; border-right: 1px solid #2a3347;
+    padding: 24px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
   }
-
   .section-title { font-size: 0.72rem; font-weight: 700; color: #5a7fa8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-
   textarea {
     width: 100%; background: #1e2535; border: 1px solid #2a3347; border-radius: 8px;
     color: #e0e0e0; padding: 12px; font-size: 0.88rem; resize: vertical; min-height: 100px;
     font-family: inherit; line-height: 1.5;
   }
   textarea:focus { outline: none; border-color: #2e6da4; }
-
   .field-row { display: flex; flex-direction: column; gap: 6px; }
   .field-row label { font-size: 0.78rem; color: #7a8fa8; }
   input[type=text], input[type=number] {
@@ -43,7 +35,6 @@
     color: #e0e0e0; padding: 8px 10px; font-size: 0.85rem;
   }
   input:focus { outline: none; border-color: #2e6da4; }
-
   .workflow-btns { display: flex; gap: 8px; }
   .wf-btn {
     flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #2a3347;
@@ -52,7 +43,6 @@
   }
   .wf-btn:hover { border-color: #2e6da4; color: #fff; }
   .wf-btn.active { background: #2e6da4; border-color: #2e6da4; color: #fff; }
-
   .run-btn {
     width: 100%; padding: 13px; border-radius: 8px; border: none;
     background: linear-gradient(135deg, #2e6da4, #1a9f6c);
@@ -62,11 +52,7 @@
   .run-btn:hover { opacity: 0.88; }
   .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* ── 오른쪽 메인 ── */
-  .panel-right {
-    display: flex; flex-direction: column; overflow: hidden;
-  }
-
+  .panel-right { display: flex; flex-direction: column; overflow: hidden; }
   .tabs { display: flex; background: #161b27; border-bottom: 1px solid #2a3347; }
   .tab {
     padding: 12px 20px; font-size: 0.84rem; color: #5a7fa8; cursor: pointer;
@@ -74,53 +60,196 @@
   }
   .tab:hover { color: #a8c9e8; }
   .tab.active { color: #4fa3e0; border-bottom-color: #4fa3e0; }
-
   .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
   .tab-content.active { display: block; }
 
-  /* trajectory 카드 */
+  /* ── LangGraph 실행 경로 패널 ── */
+  .graph-panel {
+    background: #141a28; border: 1px solid #2a3347; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px;
+  }
+  .graph-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #5a7fa8; margin-bottom: 14px;
+  }
+  .graph-flow {
+    display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 4px;
+  }
+  .graph-node {
+    flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; min-width: 90px;
+  }
+  .node-box {
+    width: 84px; padding: 8px 6px; border-radius: 8px; text-align: center;
+    border: 2px solid #2a3347; background: #1a2035;
+    transition: all .4s ease;
+  }
+  .node-box.pending  { border-color: #2a3347; background: #1a2035; }
+  .node-box.running  { border-color: #ff9800; background: #1e1800; box-shadow: 0 0 10px #ff980055; animation: pulse .8s infinite; }
+  .node-box.done     { border-color: #66bb6a; background: #0a1e10; }
+  .node-box.error    { border-color: #ef5350; background: #1e0a0a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .node-name {
+    font-size: 0.72rem; font-weight: 700; color: #5a7fa8;
+    transition: color .4s;
+  }
+  .node-box.running  .node-name { color: #ff9800; }
+  .node-box.done     .node-name { color: #66bb6a; }
+  .node-box.error    .node-name { color: #ef5350; }
+  .node-sub {
+    font-size: 0.62rem; color: #3a4f6a; margin-top: 2px;
+    transition: color .4s;
+  }
+  .node-box.done  .node-sub { color: #3a7a4a; }
+  .node-box.error .node-sub { color: #7a3030; }
+  .node-ms {
+    font-size: 0.68rem; font-family: monospace;
+    color: #3a5a3a; height: 14px;
+    transition: color .4s;
+  }
+  .node-box.done ~ .node-ms { color: #66bb6a; }
+  .node-status { font-size: 0.9rem; height: 18px; }
+  .graph-arrow {
+    flex-shrink: 0; color: #2a3a50; font-size: 1rem;
+    padding: 0 2px; margin-bottom: 14px;
+  }
+  .graph-arrow.lit { color: #66bb6a; }
+
+  /* ── Trajectory 카드 (clean schema) ── */
   .traj-card {
     background: #1e2535; border: 1px solid #2a3347; border-radius: 10px;
     margin-bottom: 12px; overflow: hidden; animation: slideIn .3s ease;
   }
   @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
   .traj-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: #1a2032; cursor: pointer;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 12px 14px; background: #1a2032; cursor: pointer;
   }
-  .traj-agent { font-weight: 700; font-size: 0.88rem; color: #4fa3e0; }
-  .traj-step { font-size: 0.78rem; color: #7a9fc8; }
-  .traj-time { font-size: 0.75rem; color: #4a5f7a; }
-  .traj-api { font-size: 0.72rem; color: #1a9f6c; font-family: monospace; }
-
+  .traj-goal { font-weight: 700; font-size: 0.88rem; color: #4fa3e0; margin-bottom: 2px; }
+  .traj-plan { font-size: 0.75rem; color: #5abf97; font-family: monospace; }
   .traj-body { padding: 12px 14px; display: none; }
   .traj-card.open .traj-body { display: block; }
   .traj-card.open .traj-header { border-bottom: 1px solid #2a3347; }
 
-  .kv-row { display: grid; grid-template-columns: 110px 1fr; gap: 6px; margin-bottom: 8px; font-size: 0.82rem; }
-  .kv-key { color: #5a7fa8; font-weight: 600; }
-  .kv-val { color: #c0d0e0; word-break: break-all; }
-  pre { background: #131820; border-radius: 6px; padding: 10px; font-size: 0.78rem; color: #9fbfd8; overflow-x: auto; white-space: pre-wrap; }
+  /* schema 필드 구분선 */
+  .sec {
+    margin: 14px 0 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-label {
+    font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1.2px; white-space: nowrap;
+  }
+  .sec-line { flex: 1; height: 1px; opacity: 0.35; }
 
-  .error-badge { background: #5a1a1a; color: #ff6b6b; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; }
+  /* 각 섹션 색상 */
+  .sec-plan     .sec-label { color: #00bcd4; }
+  .sec-plan     .sec-line  { background: #00bcd4; }
+  .sec-action   .sec-label { color: #ff9800; }
+  .sec-action   .sec-line  { background: #ff9800; }
+  .sec-state    .sec-label { color: #b39ddb; }
+  .sec-state    .sec-line  { background: #b39ddb; }
+  .sec-result   .sec-label { color: #66bb6a; }
+  .sec-result   .sec-line  { background: #66bb6a; }
+  .sec-recovery .sec-label { color: #ef5350; }
+  .sec-recovery .sec-line  { background: #ef5350; }
+
+  .action-tool {
+    display: inline-block; background: #1a2a3a; color: #ff9800;
+    border: 1px solid #ff980044; border-radius: 4px; padding: 3px 10px;
+    font-size: 0.8rem; font-family: monospace; margin-bottom: 6px;
+  }
+  .result-box {
+    background: #0a1e10; border-left: 3px solid #66bb6a;
+    border-radius: 0 6px 6px 0; padding: 10px 12px;
+    font-size: 0.83rem; color: #c8f0dc; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .recovery-box {
+    background: #1e0a0a; border-left: 3px solid #ef5350;
+    border-radius: 0 6px 6px 0; padding: 8px 12px;
+    font-size: 0.8rem; color: #ffcdd2; line-height: 1.5;
+  }
+  .recovery-none {
+    font-size: 0.8rem; color: #555e70; font-family: monospace;
+  }
+
+  /* signals table */
+  .signals-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 4px; }
+  .signals-table th { background: #1a1535; color: #9b7fd4; padding: 5px 8px; text-align: left; font-weight: 700; }
+  .signals-table td { padding: 5px 8px; border-bottom: 1px solid #2a3347; color: #c0d0e0; font-family: monospace; }
+  .risk-high   { color: #ff6b6b; font-weight: 700; }
+  .risk-medium { color: #d4a017; font-weight: 700; }
+  .risk-low    { color: #1a9f6c; font-weight: 700; }
+
+  /* collapse toggle */
+  .collapsible-toggle {
+    cursor: pointer; font-size: 0.75rem; color: #4a6fa8; user-select: none;
+    display: flex; align-items: center; gap: 4px; margin-top: 4px;
+  }
+  .collapsible-toggle:hover { color: #6a9fd8; }
+  .collapsible-body { display: none; margin-top: 6px; }
+  .collapsible-body.open { display: block; }
+
+  pre {
+    background: #131820; border-radius: 6px; padding: 10px;
+    font-size: 0.78rem; color: #9fbfd8; overflow-x: auto; white-space: pre-wrap;
+  }
+
+  /* chain arrow */
+  .chain-arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 0; color: #2e6da4; font-size: 0.75rem; gap: 6px;
+  }
+  .chain-arrow::before, .chain-arrow::after { content: ''; flex: 1; height: 1px; background: #2a3347; }
+
+  /* ── Debug Trace 카드 ── */
+  .debug-card {
+    background: #181f2e; border: 1px solid #2a3347; border-radius: 8px;
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .debug-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px; background: #141a28; cursor: pointer;
+  }
+  .debug-agent { font-weight: 700; font-size: 0.85rem; color: #7ab8e8; }
+  .debug-step  { font-size: 0.75rem; color: #6a8fb8; }
+  .debug-time  { font-size: 0.72rem; color: #3a4f6a; }
+  .debug-card-body { padding: 10px 12px; display: none; }
+  .debug-card.open .debug-card-body { display: block; }
+  .debug-card.open .debug-card-header { border-bottom: 1px solid #2a3347; }
+
+  .intent-badge {
+    display: inline-block; background: #0a1a30; color: #4fa3e0;
+    border: 1px solid #1a4a7a; border-radius: 4px; padding: 2px 7px;
+    font-size: 0.75rem; font-family: monospace; margin: 2px 2px 2px 0;
+  }
+  .confidence-bar {
+    display: inline-block; background: #1a9f6c; height: 6px; border-radius: 3px;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .llm-raw-box {
+    background: #0a1525; border-left: 3px solid #4fa3e0;
+    border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 8px 0;
+    font-size: 0.83rem; color: #c8dff0; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .label-sm {
+    font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.7px; margin-bottom: 4px;
+  }
 
   /* 판정 결과 */
-  .verdict-card {
-    border-radius: 12px; padding: 24px; margin-bottom: 20px;
-    border: 2px solid; text-align: center;
-  }
-  .verdict-가능    { background: #0d2e1a; border-color: #1a9f6c; }
-  .verdict-조건부  { background: #2e240a; border-color: #d4a017; }
-  .verdict-불가    { background: #2e0a0a; border-color: #c0392b; }
+  .verdict-card { border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 2px solid; text-align: center; }
+  .verdict-가능         { background: #0d2e1a; border-color: #1a9f6c; }
+  .verdict-조건부       { background: #2e240a; border-color: #d4a017; }
+  .verdict-불가         { background: #2e0a0a; border-color: #c0392b; }
   .verdict-에스컬레이션 { background: #1a0a2e; border-color: #8e44ad; }
-
   .verdict-label { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
-  .verdict-가능    .verdict-label { color: #1a9f6c; }
-  .verdict-조건부  .verdict-label { color: #d4a017; }
-  .verdict-불가    .verdict-label { color: #c0392b; }
+  .verdict-가능         .verdict-label { color: #1a9f6c; }
+  .verdict-조건부       .verdict-label { color: #d4a017; }
+  .verdict-불가         .verdict-label { color: #c0392b; }
   .verdict-에스컬레이션 .verdict-label { color: #8e44ad; }
-
   .verdict-sub { font-size: 0.85rem; color: #7a9fc8; }
 
   .escalation-banner {
@@ -135,13 +264,6 @@
   .scenario-table td { padding: 9px 12px; border-bottom: 1px solid #2a3347; color: #c0d0e0; }
   .scenario-table tr:nth-child(even) td { background: #1a2032; }
 
-  /* 디버그 */
-  .debug-log {
-    background: #131820; border-radius: 8px; padding: 14px;
-    font-family: monospace; font-size: 0.78rem; color: #7a9fc8;
-    white-space: pre-wrap; word-break: break-all; max-height: 500px; overflow-y: auto;
-  }
-
   .status-bar {
     padding: 8px 20px; background: #161b27; border-top: 1px solid #2a3347;
     font-size: 0.78rem; color: #4a5f7a; display: flex; align-items: center; gap: 8px;
@@ -149,61 +271,8 @@
   .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a5f7a; }
   .dot.running { background: #1a9f6c; animation: pulse .8s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-
   .empty-state { text-align: center; color: #3a4f6a; padding: 60px 0; font-size: 0.9rem; }
   .empty-state .big { font-size: 2.5rem; margin-bottom: 12px; }
-
-  /* 에이전트 체인 시각화 */
-  .chain-arrow {
-    display: flex; align-items: center; justify-content: center;
-    padding: 4px 0; color: #2e6da4; font-size: 0.75rem; gap: 6px;
-  }
-  .chain-arrow::before, .chain-arrow::after {
-    content: ''; flex: 1; height: 1px; background: #2a3347;
-  }
-
-  /* LLM 원문 응답 — 메인 */
-  .llm-response-box {
-    background: #0a1525; border-left: 3px solid #4fa3e0;
-    border-radius: 0 6px 6px 0; padding: 12px 14px; margin: 10px 0;
-    font-size: 0.85rem; color: #c8dff0; line-height: 1.65;
-    white-space: pre-wrap; word-break: break-word;
-  }
-  .llm-response-label {
-    font-size: 0.68rem; font-weight: 700; color: #4fa3e0;
-    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px;
-  }
-
-  .chain-box {
-    background: #0d1a2e; border: 1px solid #1a4a7a; border-radius: 6px;
-    padding: 8px 12px; margin: 4px 0; font-size: 0.78rem; color: #6a9fc0;
-    white-space: pre-wrap; word-break: break-all;
-  }
-  .chain-box.output {
-    border-color: #1a7a5a; color: #5abf97; background: #0a1e16;
-  }
-  .chain-label {
-    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
-    text-transform: uppercase; margin-bottom: 4px;
-  }
-  .chain-label.recv { color: #2e6da4; }
-  .chain-label.send { color: #1a9f6c; }
-  .chain-section { margin: 8px 0; }
-  .chain-toggle {
-    cursor: pointer; font-size: 0.75rem; color: #4a6fa8; user-select: none;
-    display: flex; align-items: center; gap: 4px;
-  }
-  .chain-toggle:hover { color: #6a9fd8; }
-  .chain-collapsible { display: none; }
-  .chain-collapsible.open { display: block; }
-
-  .method-badge {
-    font-size: 0.68rem; padding: 2px 7px; border-radius: 4px;
-    font-weight: 700; letter-spacing: 0.3px;
-  }
-  .method-badge.llm    { background: #0d2240; color: #4fa3e0; }
-  .method-badge.rule   { background: #2a1a0a; color: #d4a017; }
-  .method-badge.manual { background: #1a2a1a; color: #5abf97; }
 </style>
 </head>
 <body>
@@ -219,34 +288,19 @@
 
   <!-- 왼쪽 입력 패널 -->
   <div class="panel-left">
-
     <div>
       <div class="section-title">영업팀 질의</div>
-      <textarea id="query" placeholder="예: PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘. 금형 교체 필요한 상황이야.">PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘.</textarea>
+      <textarea id="query" placeholder="예: PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘.">PA-2041 제품 3,000개 6월 30일까지 납기 가능한지 확인해줘.</textarea>
     </div>
-
     <div>
       <div class="section-title">수주 정보</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="field-row">
-          <label>수주 ID</label>
-          <input type="text" id="order_id" value="ORD-0001">
-        </div>
-        <div class="field-row">
-          <label>제품 코드</label>
-          <input type="text" id="product_code" value="PA-2041">
-        </div>
-        <div class="field-row">
-          <label>요청 수량</label>
-          <input type="number" id="required_qty" value="3000">
-        </div>
-        <div class="field-row">
-          <label>납기 요청일</label>
-          <input type="text" id="required_date" value="2026-05-30">
-        </div>
+        <div class="field-row"><label>수주 ID</label><input type="text" id="order_id" value="ORD-0001"></div>
+        <div class="field-row"><label>제품 코드</label><input type="text" id="product_code" value="PA-2041"></div>
+        <div class="field-row"><label>요청 수량</label><input type="number" id="required_qty" value="3000"></div>
+        <div class="field-row"><label>납기 요청일</label><input type="text" id="required_date" value="2026-06-30"></div>
       </div>
     </div>
-
     <div>
       <div class="section-title">워크플로 (수동 선택 / 미선택 시 AI 판별)</div>
       <div class="workflow-btns">
@@ -255,28 +309,41 @@
         <button class="wf-btn" data-wf="C" onclick="selectWF(this)">C<br><span style="font-size:.7rem;font-weight:400">경합+에스컬</span></button>
       </div>
     </div>
-
     <button class="run-btn" id="runBtn" onclick="runAgent()">▶ 에이전트 실행</button>
-
     <div>
       <div class="section-title">Agent 서버</div>
       <input type="text" id="agentUrl" value="http://211.184.227.234:8000">
     </div>
-
   </div>
 
   <!-- 오른쪽 메인 -->
   <div class="panel-right">
     <div class="tabs">
       <div class="tab active" onclick="switchTab('trajectory', this)">Trajectory</div>
+      <div class="tab" onclick="switchTab('debug', this)">디버그 트레이스</div>
       <div class="tab" onclick="switchTab('result', this)">판정 결과</div>
-      <div class="tab" onclick="switchTab('debug', this)">디버그</div>
     </div>
 
-    <!-- Trajectory 탭 -->
+    <!-- Trajectory 탭 (clean schema) -->
     <div class="tab-content active" id="tab-trajectory">
+
+      <!-- LangGraph 실행 경로 -->
+      <div class="graph-panel">
+        <div class="graph-title">LangGraph 실행 경로</div>
+        <div class="graph-flow" id="graphFlow">
+          <!-- JS로 렌더링 -->
+        </div>
+      </div>
+
       <div id="trajectoryList">
-        <div class="empty-state"><div class="big">🤖</div>에이전트를 실행하면 trajectory가 여기에 표시됩니다.</div>
+        <div class="empty-state"><div class="big">🤖</div>에이전트를 실행하면 Trajectory가 여기에 표시됩니다.</div>
+      </div>
+    </div>
+
+    <!-- 디버그 트레이스 탭 (상세 디버그) -->
+    <div class="tab-content" id="tab-debug">
+      <div id="debugTraceList">
+        <div class="empty-state"><div class="big">🔍</div>실행 후 상세 디버그 트레이스가 여기에 표시됩니다.</div>
       </div>
     </div>
 
@@ -285,11 +352,6 @@
       <div id="resultArea">
         <div class="empty-state"><div class="big">📋</div>실행 후 최종 판정이 여기에 표시됩니다.</div>
       </div>
-    </div>
-
-    <!-- 디버그 탭 -->
-    <div class="tab-content" id="tab-debug">
-      <div class="debug-log" id="debugLog">// 실행 로그가 여기에 표시됩니다...</div>
     </div>
 
     <div class="status-bar">
@@ -302,15 +364,71 @@
 
 <script>
 let selectedWF = null;
+let trajCount = 0;
+let debugCount = 0;
+
+// ── LangGraph 노드 정의 ──
+const GRAPH_NODES = [
+  { id: 'orch_route',   label: 'Orchestrator', sub: '워크플로 판별', agentKey: 'Orchestrator__워크플로 판별' },
+  { id: 'capa',         label: '생산CAPA',      sub: 'CAPA 분석',    agentKey: '생산CAPA Agent' },
+  { id: 'material',     label: '자재구매',      sub: '재고 분석',    agentKey: '자재구매 Agent' },
+  { id: 'quality',      label: '품질조건',      sub: '품질 분석',    agentKey: '품질조건 Agent' },
+  { id: 'mold',         label: '금형셋업',      sub: '금형 분석',    agentKey: '금형셋업 Agent' },
+  { id: 'orch_verdict', label: 'Orchestrator', sub: '최종 판정',    agentKey: 'Orchestrator__최종 판정' },
+];
+
+function initGraph() {
+  const flow = document.getElementById('graphFlow');
+  flow.innerHTML = '';
+  GRAPH_NODES.forEach((node, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('div');
+      arrow.className = 'graph-arrow';
+      arrow.id = 'arrow_' + i;
+      arrow.textContent = '▶';
+      flow.appendChild(arrow);
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'graph-node';
+    wrap.innerHTML = `
+      <div class="node-status" id="ns_${node.id}"></div>
+      <div class="node-box pending" id="nb_${node.id}">
+        <div class="node-name">${node.label}</div>
+        <div class="node-sub">${node.sub}</div>
+      </div>
+      <div class="node-ms" id="nm_${node.id}">—</div>
+    `;
+    flow.appendChild(wrap);
+  });
+}
+
+function updateGraphNode(agentName, step, elapsedMs, isError) {
+  const key = (agentName === 'Orchestrator') ? `Orchestrator__${step}` : agentName;
+  const node = GRAPH_NODES.find(n => n.agentKey === key);
+  if (!node) return;
+
+  const nb  = document.getElementById('nb_'  + node.id);
+  const nm  = document.getElementById('nm_'  + node.id);
+  const ns  = document.getElementById('ns_'  + node.id);
+  if (!nb) return;
+
+  nb.className = 'node-box ' + (isError ? 'error' : 'done');
+  nm.textContent = elapsedMs >= 1000 ? (elapsedMs/1000).toFixed(1)+'s' : elapsedMs+'ms';
+  nm.style.color = isError ? '#ef5350' : '#66bb6a';
+  ns.textContent = isError ? '✗' : '✓';
+
+  // 해당 노드 앞 화살표도 활성화
+  const idx = GRAPH_NODES.findIndex(n => n.agentKey === key);
+  if (idx > 0) {
+    const arrow = document.getElementById('arrow_' + idx);
+    if (arrow) arrow.classList.add('lit');
+  }
+}
 
 function selectWF(btn) {
   document.querySelectorAll('.wf-btn').forEach(b => b.classList.remove('active'));
-  if (selectedWF === btn.dataset.wf) {
-    selectedWF = null;  // 토글 해제
-  } else {
-    btn.classList.add('active');
-    selectedWF = btn.dataset.wf;
-  }
+  if (selectedWF === btn.dataset.wf) { selectedWF = null; }
+  else { btn.classList.add('active'); selectedWF = btn.dataset.wf; }
 }
 
 function switchTab(name, el) {
@@ -325,158 +443,261 @@ function setStatus(running, text) {
   document.getElementById('statusText').textContent = text;
 }
 
-function appendDebug(text) {
-  const el = document.getElementById('debugLog');
-  el.textContent += '\n' + text;
-  el.scrollTop = el.scrollHeight;
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
 }
 
-let trajCardCount = 0;
+function toggle(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById(id + '_icon');
+  const open = el.classList.toggle('open');
+  if (icon) icon.textContent = open ? '▼' : '▶';
+}
 
+// ── Trajectory 카드 (6개 필드만: goal/plan/action/state/result/recovery) ──
 function addTrajectoryCard(entry) {
   const list = document.getElementById('trajectoryList');
-
-  // 처음 실행 시 empty-state 제거
   const empty = list.querySelector('.empty-state');
   if (empty) empty.remove();
 
-  // 첫 번째 카드 제외하고 체인 연결 화살표 추가
-  if (trajCardCount > 0) {
+  if (trajCount > 0) {
     const arrow = document.createElement('div');
     arrow.className = 'chain-arrow';
-    arrow.textContent = '▼ 체인 전달';
+    arrow.textContent = '▼ state 전달';
     list.appendChild(arrow);
   }
-  trajCardCount++;
+  trajCount++;
 
-  const hasError = entry.error;
+  const uid = 'traj_' + trajCount;
   const card = document.createElement('div');
   card.className = 'traj-card open';
-  const uid = 'card_' + trajCardCount;
 
-  const mesApi = entry.mes_api ? `<div class="traj-api">${entry.mes_api}</div>` : '';
-  const errBadge = hasError ? `<span class="error-badge">ERROR</span>` : '';
+  // ① action
+  const action = entry.action || {};
+  const toolName = Array.isArray(action.tool) ? action.tool.join(', ') : (action.tool || '-');
+  const paramsStr = JSON.stringify(action.params || {}, null, 2);
+  const resultStr = JSON.stringify(action.result || {}, null, 2);
 
-  // method 뱃지
-  const method = entry.method || '';
-  const isLLM = method.includes('llm') || method.includes('text');
-  const isRule = method.includes('fallback') || method.includes('rule') || method.includes('escalation');
-  const isManual = method === 'manual';
-  const methodBadge = method ? `<span class="method-badge ${isLLM ? 'llm' : isManual ? 'manual' : 'rule'}">${
-    isLLM ? '● LLM' : isManual ? '● 수동' : '○ 규칙'}</span>` : '';
+  // ② state — TypedDict 스냅샷
+  const st = entry.state || {};
+  const signals = st.agent_signals || {};
+  const stateBasic = [
+    st.workflow_type ? `workflow_type: ${st.workflow_type}` : null,
+    st.order_id      ? `order_id: ${st.order_id}` : null,
+    st.product_code  ? `product_code: ${st.product_code}` : null,
+    st.required_qty  ? `required_qty: ${st.required_qty}` : null,
+    st.required_date ? `required_date: ${st.required_date}` : null,
+    st.escalation_flag !== undefined ? `escalation_flag: ${st.escalation_flag}` : null,
+  ].filter(Boolean).map(s => `<div style="font-size:0.78rem;font-family:monospace;color:#9fbfd8">${s}</div>`).join('');
 
-  // ① LLM 원문 응답 — 가장 중요, 맨 앞에
-  const rawResp = entry.llm_raw_response || '';
-  const llmRawHtml = rawResp ? `
-    <div style="margin-bottom:10px">
-      <div class="llm-response-label">LLM 원문 응답</div>
-      <div class="llm-response-box">${escHtml(rawResp)}</div>
-    </div>` : '';
+  const sigLines = Object.entries(signals).map(([agent, sigs]) => {
+    const kv = Object.entries(sigs).map(([k,v]) => {
+      const cls = v==='high' ? 'risk-high' : v==='medium' ? 'risk-medium' : v==='low' ? 'risk-low' : '';
+      return `<span class="${cls}">${k}=${v}</span>`;
+    }).join('  ');
+    return `<div style="margin:2px 0;font-size:0.76rem;font-family:monospace">
+      <span style="color:#9b7fd4;font-weight:700">${agent}</span>: ${kv}
+    </div>`;
+  }).join('');
 
-  // ② 이 에이전트의 체인 출력 (다음 에이전트로 전달)
-  const myOutput = entry.llm_output || '';
-  const outputHtml = myOutput ? `
-    <div class="chain-section">
-      <div class="chain-label send">▶ 다음 에이전트로 전달 (요약)</div>
-      <div class="chain-box output">${escHtml(myOutput)}</div>
-    </div>` : '';
 
-  // ③ 판정 (orchestrator_verdict)
-  const verdictOut = entry.verdict ? `
-    <div style="margin:8px 0;display:flex;gap:12px;align-items:center">
-      <span style="font-size:0.75rem;color:#5a7fa8">판정</span>
-      <span style="font-weight:800;font-size:1.1rem;color:#4fa3e0">${entry.verdict}</span>
-    </div>` : '';
-  const condHtml = entry.conditions?.length ? `
-    <div style="margin:4px 0;font-size:0.8rem;color:#d4a017">조건: ${entry.conditions.join(' / ')}</div>` : '';
-
-  // ④ MES 응답 — 접어두기
-  const mesResp = entry.mes_response ?? entry.output ?? {};
-  const hasMes = Object.keys(mesResp).length > 0;
-  const mesHtml = hasMes ? `
-    <div class="chain-section">
-      <div class="chain-toggle" onclick="toggleChain('${uid}_mes')">
-        <span id="${uid}_mes_icon">▶</span> MES 원본 데이터 보기
-      </div>
-      <div class="chain-collapsible" id="${uid}_mes">
-        <pre style="margin-top:6px">${JSON.stringify(mesResp, null, 2)}</pre>
-      </div>
-    </div>` : '';
-
-  // ⑤ 이전 체인 — 접어두기
-  const prevCtx = entry.received_from_previous || (entry.step === '최종 판정' ? entry.received_context : '') || '';
-  const prevHtml = prevCtx ? `
-    <div class="chain-section">
-      <div class="chain-toggle" onclick="toggleChain('${uid}_prev')">
-        <span id="${uid}_prev_icon">▶</span> 이전 에이전트 체인 입력 보기
-      </div>
-      <div class="chain-collapsible" id="${uid}_prev">
-        <div class="chain-box">${escHtml(prevCtx)}</div>
-      </div>
-    </div>` : '';
+  // ③ recovery — 항상 표시
+  const recovery = entry.recovery;
+  const recoveryContent = recovery
+    ? `<div class="recovery-box">
+        <div><span style="color:#ef9090">trigger:</span> ${esc(recovery.trigger || '')}</div>
+        <div style="margin-top:4px"><span style="color:#ef9090">action:</span> ${esc(recovery.action || '')}</div>
+       </div>`
+    : `<div class="recovery-none">None</div>`;
 
   card.innerHTML = `
     <div class="traj-header" onclick="this.parentElement.classList.toggle('open')">
-      <div>
-        <div class="traj-agent">${entry.agent} ${methodBadge}</div>
-        <div class="traj-step">${entry.step} ${errBadge}</div>
-        ${mesApi}
+      <div style="width:100%">
+        <div style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#5a8fbf;margin-bottom:4px">GOAL</div>
+        <div class="traj-goal">${esc(entry.goal || '-')}</div>
       </div>
-      <div class="traj-time">${entry.elapsed_ms ?? '-'}ms</div>
     </div>
     <div class="traj-body">
-      ${llmRawHtml}
-      ${verdictOut}
-      ${condHtml}
-      ${outputHtml}
-      ${entry.effective_qty != null ? `<div style="margin:6px 0;font-size:0.82rem;color:#5abf97">실질 양품수량: ${entry.effective_qty.toLocaleString()}개</div>` : ''}
-      ${mesHtml}
-      ${prevHtml}
-      ${hasError ? `<div style="color:#ff6b6b;font-size:0.8rem;margin-top:6px">오류: ${escHtml(entry.error)}</div>` : ''}
+
+      <div class="sec sec-plan">
+        <span class="sec-label">Plan</span><div class="sec-line"></div>
+      </div>
+      <div style="font-size:0.82rem;color:#80d8e8;line-height:1.6;margin-bottom:4px">${esc(entry.plan || '-')}</div>
+
+      <div class="sec sec-action">
+        <span class="sec-label">Action</span><div class="sec-line"></div>
+      </div>
+      <div style="margin-bottom:6px"><span class="action-tool">${esc(toolName)}</span></div>
+      <div class="collapsible-toggle" onclick="toggle('${uid}_params')">
+        <span id="${uid}_params_icon">▶</span> params
+      </div>
+      <div class="collapsible-body" id="${uid}_params">
+        <pre>${esc(paramsStr)}</pre>
+      </div>
+      <div class="collapsible-toggle" onclick="toggle('${uid}_result')">
+        <span id="${uid}_result_icon">▶</span> result
+      </div>
+      <div class="collapsible-body" id="${uid}_result">
+        <pre>${esc(resultStr)}</pre>
+      </div>
+
+      <div class="sec sec-state">
+        <span class="sec-label">State</span><div class="sec-line"></div>
+      </div>
+      ${stateBasic}
+      ${sigLines ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #2a3347">${sigLines}</div>` : ''}
+
+      <div class="sec sec-result">
+        <span class="sec-label">Result</span><div class="sec-line"></div>
+      </div>
+      <div class="result-box">${esc(entry.result || '-')}</div>
+
+      <div class="sec sec-recovery">
+        <span class="sec-label">Recovery</span><div class="sec-line"></div>
+      </div>
+      ${recoveryContent}
+
     </div>
   `;
   list.appendChild(card);
   list.scrollTop = list.scrollHeight;
 }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\n/g, '<br>');
-}
+// ── 디버그 트레이스 카드 (상세) ──
+function addDebugCard(entry) {
+  const list = document.getElementById('debugTraceList');
+  const empty = list.querySelector('.empty-state');
+  if (empty) empty.remove();
 
-function toggleChain(id) {
-  const el = document.getElementById(id);
-  const icon = document.getElementById(id + '_icon');
-  if (el.classList.toggle('open')) {
-    icon.textContent = '▼';
-  } else {
-    icon.textContent = '▶';
+  debugCount++;
+  const uid = 'dbg_' + debugCount;
+  const card = document.createElement('div');
+  card.className = 'debug-card open';
+
+  // intent 정보
+  const ir = entry.intent_result || {};
+  let intentHtml = '';
+  if (ir.method) {
+    const conf = ir.confidence || 0;
+    const barW = Math.round(conf * 60);
+    const intents = (ir.intents || []).map(i => `<span class="intent-badge">${i}</span>`).join('');
+    intentHtml = `
+      <div style="margin-bottom:8px">
+        <div class="label-sm" style="color:#4fa3e0">Intent Routing</div>
+        <div style="margin:4px 0">${intents || '<span style="color:#5a7fa8">default fallback</span>'}</div>
+        <div style="font-size:0.75rem;color:#5a8fa8">
+          confidence: ${conf.toFixed(2)}
+          <span class="confidence-bar" style="width:${barW}px"></span>
+          &nbsp;method: ${ir.method}
+        </div>
+      </div>`;
   }
+
+  // LLM 원문
+  const raw = entry.llm_raw_response || entry.llm_analysis || '';
+  const llmHtml = raw ? `
+    <div style="margin-bottom:8px">
+      <div class="label-sm" style="color:#4fa3e0">LLM 원문 응답</div>
+      <div class="llm-raw-box">${esc(raw)}</div>
+    </div>` : '';
+
+  // signals
+  const sigs = entry.signals || {};
+  let sigsHtml = '';
+  if (Object.keys(sigs).length) {
+    const kv = Object.entries(sigs).map(([k,v]) => {
+      let cls = (v==='high'?'risk-high':v==='medium'?'risk-medium':v==='low'?'risk-low':'');
+      return `<span class="${cls}">${k}=${v}</span>`;
+    }).join('  ');
+    sigsHtml = `<div style="margin-bottom:8px;font-size:0.78rem;font-family:monospace;color:#9fbfd8">${kv}</div>`;
+  }
+
+  // MES 응답 (접힘)
+  const mesResp = entry.mes_response;
+  const mesHtml = mesResp && Object.keys(mesResp).length ? `
+    <div class="collapsible-toggle" onclick="toggle('${uid}_mes')">
+      <span id="${uid}_mes_icon">▶</span> MES 원본 데이터
+    </div>
+    <div class="collapsible-body" id="${uid}_mes">
+      <pre>${esc(JSON.stringify(mesResp, null, 2))}</pre>
+    </div>` : '';
+
+  // 이전 체인 입력 (접힘)
+  const prev = entry.received_from_previous || '';
+  const prevHtml = prev ? `
+    <div class="collapsible-toggle" onclick="toggle('${uid}_prev')">
+      <span id="${uid}_prev_icon">▶</span> 이전 체인 입력 보기
+    </div>
+    <div class="collapsible-body" id="${uid}_prev">
+      <pre style="font-size:0.74rem">${esc(prev)}</pre>
+    </div>` : '';
+
+  card.innerHTML = `
+    <div class="debug-card-header" onclick="this.parentElement.classList.toggle('open')">
+      <div>
+        <div class="debug-agent">${entry.agent || '-'}</div>
+        <div class="debug-step">${entry.step || ''} · ${entry.mes_api || ''}</div>
+      </div>
+      <div class="debug-time">${entry.elapsed_ms ?? '-'}ms</div>
+    </div>
+    <div class="debug-card-body">
+      ${intentHtml}
+      ${sigsHtml}
+      ${llmHtml}
+      ${entry.effective_qty != null ? `<div style="margin-bottom:6px;font-size:0.82rem;color:#5abf97">실질 양품수량: ${entry.effective_qty.toLocaleString()}개</div>` : ''}
+      ${mesHtml}
+      ${prevHtml}
+    </div>
+  `;
+  list.appendChild(card);
 }
 
 function renderResult(data) {
   const area = document.getElementById('resultArea');
   const v = data.verdict;
 
-  let escHtml = '';
+  // 납기 무관 질의 에러
+  if (data.invalid_query) {
+    const reason = data.verdict_reason || '납기대응 시스템과 무관한 질의입니다.';
+    area.innerHTML = `
+      <div style="background:#1e0a0a;border:2px solid #ef5350;border-radius:12px;padding:28px 24px;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:2rem;margin-bottom:8px;">🚫</div>
+          <div style="font-size:1.05rem;font-weight:700;color:#ef5350;">납기대응 질의가 아닙니다</div>
+        </div>
+        <div style="background:#2a1010;border-left:3px solid #ef5350;border-radius:0 6px 6px 0;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:0.72rem;font-weight:700;color:#ef8080;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">AI 판단 근거</div>
+          <div style="font-size:0.86rem;color:#ffcdd2;line-height:1.7;">${esc(reason)}</div>
+        </div>
+        <div style="background:#1a1a1a;border-radius:8px;padding:14px 16px;font-size:0.82rem;color:#777;line-height:1.9;">
+          <div style="color:#999;font-weight:700;margin-bottom:8px;">이렇게 질의해주세요</div>
+          <div>• 납기 확인: <span style="color:#aaa;">"ORD-001 PA-2041 3000개 6월 30일까지 납기 가능?"</span></div>
+          <div>• 자재 부족: <span style="color:#aaa;">"PA-2041 자재 부족한데 8월까지 2000개 가능한지 봐줘"</span></div>
+          <div>• 수주 경합: <span style="color:#aaa;">"ORD-002랑 ORD-003이 같은 금형 쓰는데 납기 조율 가능?"</span></div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid #2a2a2a;color:#555;font-size:0.76rem;">
+            수주 ID, 제품 코드, 수량, 납기일이 포함될수록 정확한 판정이 가능합니다.
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  let escBanner = '';
   if (data.escalation_flag) {
-    escHtml = `
+    escBanner = `
       <div class="escalation-banner">
         <div class="icon">⚠️</div>
         <div class="msg"><strong>에스컬레이션 필요</strong><br>${data.escalation_reason || '생산관리팀장 승인 필요'}</div>
       </div>`;
   }
-
   const rows = (data.scenario_table || []).map(r =>
     `<tr><td>${r['항목']}</td><td>${r['값']}</td><td>${r['비고'] || ''}</td></tr>`
   ).join('');
 
   area.innerHTML = `
-    ${escHtml}
+    ${escBanner}
     <div class="verdict-card verdict-${v}">
       <div class="verdict-label">${v}</div>
       <div class="verdict-sub">워크플로 ${data.workflow_type} · ${data.error_log?.length ?? 0}개 오류</div>
@@ -488,15 +709,22 @@ function renderResult(data) {
   `;
 }
 
+const NEXT_AGENT = {
+  'Orchestrator':   '생산CAPA',
+  '생산CAPA Agent': '자재구매',
+  '자재구매 Agent': '품질조건',
+  '품질조건 Agent': '금형셋업',
+  '금형셋업 Agent': '최종 판정',
+};
+
 async function runAgent() {
   const btn = document.getElementById('runBtn');
   btn.disabled = true;
-
-  // 초기화
-  trajCardCount = 0;
+  trajCount = 0; debugCount = 0;
+  initGraph();
   document.getElementById('trajectoryList').innerHTML = '';
+  document.getElementById('debugTraceList').innerHTML = '';
   document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="big">⏳</div>분석 중...</div>';
-  document.getElementById('debugLog').textContent = '// 실행 시작\n';
 
   const baseUrl = document.getElementById('agentUrl').value.replace(/\/$/, '');
   const params = new URLSearchParams({
@@ -512,50 +740,43 @@ async function runAgent() {
 
   const es = new EventSource(`${baseUrl}/stream?${params}`);
 
-  // trajectory 도착 = 해당 에이전트 완료 → 다음 에이전트 이름으로 상태 업데이트
-  const NEXT_AGENT = {
-    'Orchestrator':    '생산CAPA',
-    '생산CAPA Agent':  '자재구매',
-    '자재구매 Agent':  '품질조건',
-    '품질조건 Agent':  '금형셋업',
-    '금형셋업 Agent':  '최종 판정',
-  };
-
   es.addEventListener('trajectory', e => {
     const entry = JSON.parse(e.data);
     addTrajectoryCard(entry);
-    appendDebug(`[TRAJECTORY] ${entry.agent} / ${entry.step}`);
+    switchTab('trajectory', document.querySelector('.tab'));
+  });
+
+  es.addEventListener('debug_trace', e => {
+    const entry = JSON.parse(e.data);
+    addDebugCard(entry);
+    const isError = (entry.error || '').length > 0;
+    updateGraphNode(entry.agent, entry.step, entry.elapsed_ms, isError);
     const next = NEXT_AGENT[entry.agent];
     setStatus(true, next ? `${next} 에이전트 실행 중...` : '최종 판정 중...');
-    switchTab('trajectory', document.querySelector('.tab'));
   });
 
   es.addEventListener('result', e => {
     const data = JSON.parse(e.data);
     renderResult(data);
-    appendDebug(`[RESULT] 판정: ${data.verdict}`);
-    if (data.error_log?.length) {
-      appendDebug(`[ERROR_LOG]\n${JSON.stringify(data.error_log, null, 2)}`);
-    }
   });
 
   es.addEventListener('done', () => {
     es.close();
     btn.disabled = false;
     setStatus(false, '완료');
-    appendDebug('// 실행 완료');
-    // 결과 탭으로 이동
     const tabs = document.querySelectorAll('.tab');
-    switchTab('result', tabs[1]);
+    switchTab('result', tabs[2]);
   });
 
-  es.onerror = err => {
-    appendDebug(`[SSE ERROR] ${JSON.stringify(err)}`);
+  es.onerror = () => {
     es.close();
     btn.disabled = false;
-    setStatus(false, '오류 발생 - 디버그 탭 확인');
+    setStatus(false, '오류 발생');
   };
 }
+
+// 초기 graph 렌더링
+initGraph();
 </script>
 </body>
 </html>
